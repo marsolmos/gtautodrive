@@ -6,22 +6,30 @@ import pyautogui
 from directkeys import PressKey, W, A, S, D
 
 
-def process_img(image):
-    original_image = image
-    # convert to gray
-    processed_img = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    # edge detection
-    processed_img = cv2.Canny(processed_img, threshold1=100, threshold2=150)
+def roi(img, vertices):
+    # blank mask
+    mask = np.zeros_like(img)
+    # fill the mask
+    cv2.fillPoly(mask, vertices, 255)
+    # now only show the area that in the mask
+    masked = cv2.bitwise_and(img, mask)
+    return masked
+
+
+def process_img(original_image):
+    processed_img = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+    processed_img = cv2.Canny(processed_img, threshold1=200, threshold2=300)
+
+    vertices = np.array([[0,430],[320,400],[800,400],[800,230],[410,250],
+                        [0,220]], np.int32)
+    processed_img = roi(processed_img, [vertices])
+
     return processed_img
 
 
 def main():
-    for i in list(range(4))[::-1]:
-        print(i+1)
-        time.sleep(1)
-
     while(True):
-        PressKey(W)
+        # PressKey(W)
         # 800x600 windowed mode
         screen =  np.array(ImageGrab.grab(bbox=(0,40,800,640)))
         new_screen = process_img(screen)
