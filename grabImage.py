@@ -7,23 +7,28 @@ from directkeys import PressKey, W, A, S, D
 
 
 def roi(img, vertices):
-    # blank mask
-    mask = np.zeros_like(img)
-    # fill the mask
-    cv2.fillPoly(mask, vertices, 255)
-    # now only show the area that in the mask
-    masked = cv2.bitwise_and(img, mask)
+    mask = np.zeros_like(img) # blank mask
+    cv2.fillPoly(mask, vertices, 255) # fill the mask
+    masked = cv2.bitwise_and(img, mask) # now only show the area in the mask
     return masked
+
+
+def draw_lines(img,lines):
+    for line in lines:
+        coords = line[0]
+        cv2.line(img, (coords[0], coords[1]), (coords[2], coords[3]), [255,255,255], 3)
 
 
 def process_img(original_image):
     processed_img = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
     processed_img = cv2.Canny(processed_img, threshold1=200, threshold2=300)
+    vertices = np.array([[0,250],[300,150],[400,150],[800,340],[800,450],
+                        [0,450]], np.int32)
 
-    vertices = np.array([[0,430],[320,400],[800,400],[800,230],[410,250],
-                        [0,220]], np.int32)
+    processed_img = cv2.GaussianBlur(processed_img,(5,5),0)
     processed_img = roi(processed_img, [vertices])
-
+    lines = cv2.HoughLinesP(processed_img, 1, np.pi/180, 180, 550, 10)
+    draw_lines(processed_img,lines)
     return processed_img
 
 
