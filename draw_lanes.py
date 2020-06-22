@@ -3,7 +3,6 @@ import cv2
 import time
 import pyautogui
 from directkeys import PressKey,ReleaseKey, W, A, S, D
-from draw_lanes import draw_lanes
 from grabscreen import grab_screen
 
 def roi(img, vertices):
@@ -111,3 +110,6 @@ def main():
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
+
+if __name__ == '__main__':
+    main()
