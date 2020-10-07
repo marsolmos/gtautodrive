@@ -5,6 +5,7 @@ import numpy as np
 import win32gui, win32ui, win32con, win32api
 
 def grab_screen(region=None):
+    ''' Take quick screenshots of the game with win32 lib and return them'''
 
     hwin = win32gui.GetDesktopWindow()
 
