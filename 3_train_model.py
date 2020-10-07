@@ -28,13 +28,13 @@ from keras.applications.inception_v3 import InceptionV3
 from keras.callbacks import TensorBoard
 from keras.models import load_model
 
-BATCH = 16
+BATCH = 10
 
 WIDTH = 80
 HEIGHT = 60
 EPOCHS = 30
 
-MODEL_NAME = 'model_1_balanced'
+MODEL_NAME = 'model_1_raw'
 
 LOAD_MODEL = False
 
@@ -53,14 +53,14 @@ FILE_I_END = len(os.listdir(file_path))
 #               loss='sparse_categorical_crossentropy',
 #               metrics=['accuracy'])
 
-input_tensor = Input(shape=(WIDTH,HEIGHT,3))
-model = InceptionV3(
-                    include_top=True,
-                    input_tensor=input_tensor,
-                    pooling='max',
-                    classes=9,
-                    weights=None)
-model.compile('Adagrad', 'categorical_crossentropy')
+# input_tensor = Input(shape=(SAMPLE,WIDTH,HEIGHT,3))
+# model = InceptionV3(
+#                     include_top=True,
+#                     input_tensor=input_tensor,
+#                     pooling='max',
+#                     classes=9,
+#                     weights=None)
+# model.compile('Adagrad', 'categorical_crossentropy')
 
 """
 tensorboard = TensorBoard(
@@ -89,11 +89,19 @@ for e in range(EPOCHS):
             SAMPLE = len(train_data)
             print('training_data-{}.npy - Sample Size: {} - Batch Size: {}'.format(i,SAMPLE,BATCH))
 
-            X = np.array([i[0] for i in train_data]).reshape(-1,WIDTH,HEIGHT,3) #Pre reshaped at recording
+            X = np.array([i[0] for i in train_data]).reshape(SAMPLE,WIDTH,HEIGHT,3) #Pre reshaped at recording
             Y = np.array([i[1] for i in train_data])
 
             print("============================")
             print("Epochs: {} - Steps: {}".format(e, count))
+            input_tensor = Input(shape=(SAMPLE,WIDTH,HEIGHT,3))
+            model = InceptionV3(
+                                include_top=False,
+                                input_shape=input_tensor,
+                                pooling='max',
+                                classes=9,
+                                weights=None)
+            model.compile('Adagrad', 'categorical_crossentropy')
             model.fit(X, Y, batch_size=BATCH ,epochs=1, validation_split=0.02) #, callbacks=[tensorboard])
             print("============================")
 
