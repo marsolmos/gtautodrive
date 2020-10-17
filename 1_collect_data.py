@@ -16,7 +16,7 @@ sd = [0,0,0,0,0,0,0,1,0]
 nk = [0,0,0,0,0,0,0,0,1]
 
 starting_value = 1
-MODEL_NAME = 'model_1_raw'
+MODEL_NAME = 'model_2_400x300_raw'
 
 while True:
     file_name = 'D:/Data Warehouse/pygta5/data/{}/training_data-{}.npy'.format(MODEL_NAME, starting_value)
@@ -26,7 +26,6 @@ while True:
         starting_value += 1
     else:
         print('File does not exist, starting fresh!',starting_value)
-
         break
 
 
@@ -67,7 +66,6 @@ def main(file_name, starting_value):
         print(i+1)
         time.sleep(1)
 
-    last_time = time.time()
     paused = False
     print('STARTING!!!')
     while(True):
@@ -75,9 +73,8 @@ def main(file_name, starting_value):
         if not paused:
             # 800x600 windowed mode
             screen = grab_screen(region=(0,40,800,600))
-            last_time = time.time()
             # resize to something a bit more acceptable for a CNN
-            screen = cv2.resize(screen, (80,60))
+            screen = cv2.resize(screen, (400,300))
             # run a color convert:
             screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
 
@@ -85,12 +82,11 @@ def main(file_name, starting_value):
             output = keys_to_output(keys)
             training_data.append([screen,output])
 
-            #print('loop took {} seconds'.format(time.time()-last_time))
-            last_time = time.time()
-##            cv2.imshow('window',cv2.resize(screen,(640,360)))
-##            if cv2.waitKey(25) & 0xFF == ord('q'):
-##                cv2.destroyAllWindows()
-##                break
+            # # Display game image captured
+            # cv2.imshow('window',cv2.resize(screen,(800,600)))
+            # if cv2.waitKey(25) & 0xFF == ord('q'):
+            #     cv2.destroyAllWindows()
+            #     break
 
             if len(training_data) % 100 == 0:
                 print(len(training_data))

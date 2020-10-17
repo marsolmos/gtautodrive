@@ -4,8 +4,8 @@ import pandas as pd
 from collections import Counter
 from random import shuffle
 
-MODEL_NAME_LOAD = 'model_1_raw' # Load raw data from this path
-MODEL_NAME_SAVE = 'model_1_balanced' # Save balanced data in this path
+MODEL_NAME_LOAD = 'model_2_400x300_raw' # Load raw data from this path
+MODEL_NAME_SAVE = 'model_2_400x300_balanced' # Save balanced data in this path
 
 file_path = 'D:/Data Warehouse/pygta5/data/{}'.format(MODEL_NAME_LOAD)
 FILE_I_END = len(os.listdir(file_path))
