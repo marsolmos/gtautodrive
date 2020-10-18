@@ -19,9 +19,11 @@ log_len = 2
 motion_req = 800
 motion_log = deque(maxlen=log_len)
 
-WIDTH = 80
-HEIGHT = 60
-LR = 1e-3
+WIDTH = 400
+HEIGHT = 300
+lr = 1e-3
+
+MODEL_NAME = 'model_2_400x300_raw_custom'
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
@@ -104,9 +106,13 @@ def no_keys():
 
 
 
-model = googlenet(WIDTH, HEIGHT, 3, LR, output=9)
-MODEL_NAME = 'model_1_balanced'
-model.load(MODEL_NAME)
+# model = googlenet(WIDTH, HEIGHT, 3, lr, output=9)
+# load_name = 'models/{}'.format(MODEL_NAME)
+# model.load(load_name)
+
+load_name = 'models/{}'.format(MODEL_NAME)
+model = tf.keras.models.load_model(load_name)
+model.summary()
 
 print('We have loaded a previous model!!!!')
 
@@ -130,11 +136,14 @@ def main():
     while(True):
 
         if not paused:
-            screen = grab_screen(region=(0,40,GAME_WIDTH,GAME_HEIGHT+40))
+            # 800x600 windowed mode
+            screen = grab_screen(region=(0,40,GAME_WIDTH,GAME_HEIGHT))
+            # resize to something a bit more acceptable for a CNN
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))
+            # run a color convert:
             screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
 
             last_time = time.time()
-            screen = cv2.resize(screen, (WIDTH,HEIGHT))
 
             delta_count_last = motion_detection(t_minus, t_now, t_plus, screen)
 
@@ -143,8 +152,11 @@ def main():
             t_plus = screen
             t_plus = cv2.blur(t_plus,(4,4))
 
-            prediction = model.predict([screen.reshape(WIDTH,HEIGHT,3)])[0]
-            prediction = np.array(prediction) * np.array([4.5, 0.1, 0.1, 0.1, 1.8, 1.8, 0.5, 0.5, 0.2])
+            screen = screen / 255.0
+
+            prediction = model.predict([screen.reshape(-1,HEIGHT,WIDTH,3)])
+
+            prediction = np.array(prediction) * np.array([0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
 
             mode_choice = np.argmax(prediction)
 

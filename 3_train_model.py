@@ -35,7 +35,7 @@ WIDTH = 400
 HEIGHT = 300
 EPOCHS = 30
 
-MODEL_NAME = 'model_2_400x300_balanced'
+MODEL_NAME = 'model_2_400x300_balanced_custom'
 
 LOAD_MODEL = False
 
@@ -59,12 +59,14 @@ if LOAD_MODEL:
 model = tf.keras.models.Sequential()
 model.add(tf.keras.layers.Conv2D(filters=2, kernel_size=2, input_shape=(HEIGHT,WIDTH,3)))
 model.add(tf.keras.layers.Flatten())
-model.add(tf.keras.layers.Dense(9, activation='relu'))
+# model.add(tf.keras.layers.Dense(9, activation='softmax'))
+model.add(tf.keras.layers.Dense(9))
+model.add(tf.keras.layers.Activation('sigmoid'))
 
 model.compile(
-              optimizer = tf.keras.optimizers.SGD(lr=lr),
-              loss = 'mse',
-              metrics = ['acc']
+              optimizer = 'rmsprop',
+              loss = 'binary_crossentropy',
+              metrics = ['accuracy']
               )
 
 model.summary()
@@ -93,12 +95,12 @@ for epoch in range(EPOCHS):
             model.fit(X, Y, epochs=5)
             print("============================")
 
-            # if count%5 == 0 and count != 0:
-            #     print('SAVING MODEL!')
-            #     save_name = 'models/{}'.format(MODEL_NAME)
-            #     model.save(save_name)
+            if count%5 == 0 and count != 0:
+                print('\nSAVING MODEL!\n')
+                save_name = 'models/{}'.format(MODEL_NAME)
+                model.save(save_name)
 
         except Exception as e:
             print(str(e))
 
-    print("FINISHED {} EPOCHS!".format(EPOCHS))
+print("FINISHED {} EPOCHS!".format(EPOCHS))
