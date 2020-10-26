@@ -81,11 +81,10 @@ def main(file_name, starting_value):
 
             keys = key_check()
             output = keys_to_output(keys)
-            training_data.append([screen,output])
+            training_data.append([processed_img,output])
 
             # Display game image captured
-            cv2.imshow('window', temp_img)
-            cv2.imshow('window2', processed_img)
+            cv2.imshow('window', processed_img)
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 break

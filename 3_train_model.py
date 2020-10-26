@@ -35,7 +35,7 @@ WIDTH = 400
 HEIGHT = 300
 EPOCHS = 30
 
-MODEL_NAME = 'model_2_400x300_balanced_custom'
+MODEL_NAME = 'model_3_400x300_raw_custom'
 
 LOAD_MODEL = False
 

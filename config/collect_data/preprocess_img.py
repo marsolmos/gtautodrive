@@ -14,6 +14,26 @@ def roi(img, vertices):
     return masked
 
 
+def convert_hls(image):
+    #from: https://github.com/naokishibuya/car-finding-lane-lines
+    return cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+
+def select_white_yellow(image):
+    #from: https://github.com/naokishibuya/car-finding-lane-lines
+    converted = convert_hls(image)
+    # white color mask
+    lower = np.uint8([  0, 200,   0])
+    upper = np.uint8([255, 255, 255])
+    white_mask = cv2.inRange(converted, lower, upper)
+    # yellow color mask
+    lower = np.array([np.round( 40 / 2), np.round(0.00 * 255), np.round(0.35 * 255)])
+    upper = np.array([np.round( 60 / 2), np.round(1.00 * 255), np.round(1.00 * 255)])
+    yellow_mask = cv2.inRange(converted, lower, upper)
+    # combine the mask
+    mask = cv2.bitwise_or(white_mask, yellow_mask)
+    return cv2.bitwise_and(image, image, mask = mask)
+
+
 def draw_lanes(img, lines, color=[0, 255, 255], thickness=3):
 
     # if this fails, go with some default line
@@ -106,18 +126,20 @@ def draw_lanes(img, lines, color=[0, 255, 255], thickness=3):
 
 def preprocess_img(image):
     original_image = image
+    # Select only white and yellow colors (road lanes basic colors)
+    image = select_white_yellow(image)
     # convert to gray
     temp_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # edge detection
-    temp_img =  cv2.Canny(temp_img, threshold1 = 200, threshold2=300)
+    temp_img =  cv2.Canny(temp_img, threshold1 = 150, threshold2=200)
 
     temp_img = cv2.GaussianBlur(temp_img,(5,5),0)
-
-    vertices = np.array([[150,350],[250,275],[500,275],[800,350]], np.int32)
-
+    # define region of interest (roi)
+    vertices = np.array([[150,350],[250,275],[500,275],[600,350]], np.int32)
     temp_img = roi(temp_img, [vertices])
 
-    lines = cv2.HoughLinesP(temp_img, 1, np.pi/180, 180, 20, 15)
+    # cv2.HoughLinesP(img, rho(pixels), theta(radians), threshold, minLineLength, maxLineGap)
+    lines = cv2.HoughLinesP(temp_img, 1, np.pi/180, 50, 70, 20)
 
     try:
         l1, l2 = draw_lanes(original_image,lines)
@@ -138,9 +160,9 @@ def preprocess_img(image):
     except Exception as e:
         pass
 
-    # Resize to something a bit more acceptable for a CNN
-    processed_img = cv2.resize(original_image, (400,300))
     # Run a color convert:
-    processed_img = cv2.cvtColor(processed_img, cv2.COLOR_BGR2RGB)
+    processed_img = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+    # Resize to something a bit more acceptable for a CNN
+    processed_img = cv2.resize(processed_img, (400,300))
 
     return temp_img,processed_img
