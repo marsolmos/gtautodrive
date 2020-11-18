@@ -16,6 +16,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+models/model_2*
+models/model_3*
 parts/
 sdist/
 var/

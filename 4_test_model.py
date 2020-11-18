@@ -29,7 +29,7 @@ WIDTH = 400
 HEIGHT = 300
 lr = 1e-3
 
-MODEL_NAME = 'model_3_400x300_raw_custom'
+MODEL_NAME = 'model_3_400x300_balanced_custom'
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]

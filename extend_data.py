@@ -2,8 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
-MODEL_NAME_LOAD = 'model_3_400x300_balanced_custom' # Load raw data from this path
-MODEL_NAME_SAVE = 'model_3_400x300_balanced_custom' # Save balanced data in this path
+MODEL_NAME_LOAD = 'model_3_400x300_raw_custom' # Load raw data from this path
+MODEL_NAME_SAVE = 'model_3_400x300_raw_custom' # Save balanced data in this path
 
 file_path = 'D:/Data Warehouse/pygta5/data/{}'.format(MODEL_NAME_LOAD)
 FILE_I_END = len(os.listdir(file_path))
