@@ -8,7 +8,11 @@ from statistics import mode,mean
 import numpy as np
 
 from config.collect_data.grabscreen import grab_screen
-from config.collect_data.vehicle_detector import vehicle_detector
+# from config.collect_data.vehicle_detector import vehicle_detector
+from object_detection.utils import label_map_util, config_util
+from object_detection.builders import model_builder
+from config.collect_data.object_detector import download_object_detector
+from config.collect_data.object_detector import detect_fn, get_distance
 from config.collect_data.directkeys import PressKey,ReleaseKey, W, A, S, D
 from config.collect_data.getkeys import key_check
 from config.test_model.motion import motion_detection
@@ -116,17 +120,8 @@ def no_keys():
 
 
 # %%
-# Vehicle Detector
+# Download and Load Vehicle Detector Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
-from object_detection.utils import label_map_util
-from object_detection.utils import config_util
-from object_detection.builders import model_builder
-
-from config.collect_data.grabscreen import grab_screen
-
-from config.collect_data.object_detector import download_object_detector
-from config.collect_data.object_detector import detect_fn
-
 PATH_TO_CFG, PATH_TO_CKPT, PATH_TO_LABELS = download_object_detector(MODEL_NAME_OBJECT_DETECTOR)
 
 # Load pipeline config and build a detection model
@@ -141,7 +136,9 @@ ckpt.restore(os.path.join(PATH_TO_CKPT, 'ckpt-0')).expect_partial()
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS,
                                                                     use_display_name=True)
 
-
+# %%
+# Load Autonomous Driving Model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
 load_name = 'models/{}'.format(MODEL_NAME)
 model = tf.keras.models.load_model(load_name)
 model.summary()
@@ -221,45 +218,19 @@ def main():
             motion_avg = round(mean(motion_log),3)
             print('loop took {} seconds. Motion: {}. Choice: {}'.format(round(time.time()-last_time, 3) , motion_avg, choice_picked))
 
-            # If collision warning detected, start evasive maneuvers:
+            # Get video stream for object detection
             screen = grab_screen(region=(40,100,800,450))
             image_np = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
 
-            # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-            image_np_expanded = np.expand_dims(image_np, axis=0)
-
-            input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
+            # Detect objects on video stream
             last_time = time.time()
+            input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
             detections, predictions_dict, shapes = detect_fn(detection_model, input_tensor)
-            print('Time to load model: {}'.format(time.time() - last_time))
+            print('Object detection inference time: {}'.format(time.time() - last_time))
 
-            # label_id_offset = 1
-            image_np_with_detections = image_np.copy()
-
-            # Define collision & distance default values
-            collision = False
-            distance = 1.0
-            for i,b in enumerate(detections['detection_boxes'][0]):
-                #                                          car                                           bus                                          truck
-                if detections['detection_classes'][0][i] == 2 or detections['detection_classes'][0][i] == 5 or detections['detection_classes'][0][i] == 7:
-                    if detections['detection_scores'][0][i] >= 0.5:
-                        mid_x = (detections['detection_boxes'][0][i][1]+detections['detection_boxes'][0][i][3])/2
-                        mid_y = (detections['detection_boxes'][0][i][0]+detections['detection_boxes'][0][i][2])/2
-                        aspect_ratio = (detections['detection_boxes'][0][i][3]-detections['detection_boxes'][0][i][1]) / (detections['detection_boxes'][0][i][2]-detections['detection_boxes'][0][i][0])
-                        distance = np.round(((1 - (detections['detection_boxes'][0][i][3] - detections['detection_boxes'][0][i][1]))**4),2)
-
-                        # Possible collision
-                        if distance <= 0.5 and mid_x > 0.3 and mid_x < 0.7 and aspect_ratio < 2:
-                            collision = True
+            # Estimate distance and collision risk from detected objects
+            collision, distance = get_distance(detections)
             print('Collision: {} - Distance: {}\n'.format(collision, distance))
-            if collision:
-                print('Collision Warning. Starting evasive maneuvers: ', end='')
-                reverse()
-                time.sleep(random.uniform(0,2))
-
-            else:
-                pass
-
 
             # If vehicle is stucked, start some evasive maneuvers
             if motion_avg < motion_req and len(motion_log) >= log_len:
@@ -298,6 +269,15 @@ def main():
 
                 for i in range(log_len-2):
                     del motion_log[0]
+
+            # If collision risk, try to avoid it
+            if collision:
+                print('Collision Warning. Starting evasive maneuvers: ', end='')
+                reverse()
+                time.sleep(random.uniform(0,2))
+
+            else:
+                pass
 
         keys = key_check()
 

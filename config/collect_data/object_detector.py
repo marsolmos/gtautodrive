@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import tarfile
 import urllib.request
 
@@ -58,3 +59,26 @@ def detect_fn(detection_model, image):
     detections = detection_model.postprocess(prediction_dict, shapes)
 
     return detections, prediction_dict, tf.reshape(shapes, [-1])
+
+
+def get_distance(detections):
+    '''
+    Get distance to detected objects and return collision alerts
+    '''
+    # Define collision & distance default values
+    collision = False
+    distance = 1.0
+    for i,b in enumerate(detections['detection_boxes'][0]):
+        #                                          car                                           bus                                          truck
+        if detections['detection_classes'][0][i] == 2 or detections['detection_classes'][0][i] == 5 or detections['detection_classes'][0][i] == 7:
+            if detections['detection_scores'][0][i] >= 0.5:
+                mid_x = (detections['detection_boxes'][0][i][1]+detections['detection_boxes'][0][i][3])/2
+                mid_y = (detections['detection_boxes'][0][i][0]+detections['detection_boxes'][0][i][2])/2
+                aspect_ratio = (detections['detection_boxes'][0][i][3]-detections['detection_boxes'][0][i][1]) / (detections['detection_boxes'][0][i][2]-detections['detection_boxes'][0][i][0])
+                distance = np.round(((1 - (detections['detection_boxes'][0][i][3] - detections['detection_boxes'][0][i][1]))**4),2)
+
+                # Possible collision
+                if distance <= 0.5 and mid_x > 0.3 and mid_x < 0.7 and aspect_ratio < 2:
+                    collision = True
+
+    return collision, distance
