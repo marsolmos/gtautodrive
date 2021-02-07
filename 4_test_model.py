@@ -8,7 +8,6 @@ from statistics import mode,mean
 import numpy as np
 
 from config.collect_data.grabscreen import grab_screen
-# from config.collect_data.vehicle_detector import vehicle_detector
 from object_detection.utils import label_map_util, config_util
 from object_detection.builders import model_builder
 from config.collect_data.object_detector import download_object_detector
@@ -36,7 +35,7 @@ motion_log = deque(maxlen=log_len)
 WIDTH = 400
 HEIGHT = 300
 
-MODEL_NAME = 'model_3_400x300_raw_custom'
+MODEL_NAME = 'model_3_400x300_balanced_custom'
 MODEL_NAME_OBJECT_DETECTOR = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
 
 w = [1,0,0,0,0,0,0,0,0]
@@ -226,7 +225,7 @@ def main():
             last_time = time.time()
             input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
             detections, predictions_dict, shapes = detect_fn(detection_model, input_tensor)
-            print('Object detection inference time: {}'.format(time.time() - last_time))
+            # print('Object detection inference time: {}'.format(time.time() - last_time))
 
             # Estimate distance and collision risk from detected objects
             collision, distance = get_distance(detections)

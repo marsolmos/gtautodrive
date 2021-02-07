@@ -6,6 +6,10 @@ import cv2
 from config.collect_data.getkeys import key_check
 from config.collect_data.grabscreen import grab_screen
 from config.collect_data.preprocess_img import preprocess_img
+from object_detection.utils import label_map_util, config_util
+from object_detection.builders import model_builder
+from config.collect_data.object_detector import download_object_detector
+from config.collect_data.object_detector import detect_fn, get_distance
 
 
 w = [1,0,0,0,0,0,0,0,0]

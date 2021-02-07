@@ -132,8 +132,8 @@ def preprocess_img(image):
     temp_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # edge detection
     temp_img =  cv2.Canny(temp_img, threshold1 = 150, threshold2=200)
-
     temp_img = cv2.GaussianBlur(temp_img,(5,5),0)
+
     # define region of interest (roi)
     vertices = np.array([[150,350],[250,275],[500,275],[600,350]], np.int32)
     temp_img = roi(temp_img, [vertices])

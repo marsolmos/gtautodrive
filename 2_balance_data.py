@@ -101,4 +101,4 @@ for i in range(1,FILE_I_END+1):
 
     save_name = 'D:/Data Warehouse/pygta5/data/{}/training_data-{}.npy'.format(MODEL_NAME_SAVE, i)
     np.save(save_name, final_data)
-    print('File saved: ', i)
+    print('Balanced file saved: ', i)
