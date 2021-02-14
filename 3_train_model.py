@@ -1,4 +1,4 @@
-#Modified code of Sentex Pygta5 2. train_model.py
+# Modified code of Sentex Pygta5 2. train_model.py
 #!/usr/bin/env python -W ignore::DeprecationWarning
 
 import numpy as np
@@ -36,7 +36,7 @@ WIDTH = 400
 HEIGHT = 300
 EPOCHS = 5
 
-MODEL_NAME = 'model_4_400x300_balanced_custom'
+MODEL_NAME = 'model_4_400x300_balanced_inceptionv3'
 
 LOAD_MODEL = False
 
@@ -48,66 +48,76 @@ if LOAD_MODEL:
     model = load_model(load_name)
     print('We have loaded a previous model!')
 
-# Define model
-model = tf.keras.models.Sequential()
-model.add(Conv2D(filters=2, kernel_size=2, input_shape=(HEIGHT,WIDTH,3)))
-model.add(Flatten())
-model.add(Dense(256, activation = 'relu'))
-model.add(Dropout(0.2))
-model.add(Dense(128, activation = 'relu'))
-model.add(Dropout(0.2))
-model.add(Dense(64, activation = 'relu'))
-model.add(Dropout(0.2))
-model.add(Dense(32, activation = 'relu'))
-model.add(Dropout(0.2))
-model.add(Dense(9, activation = 'softmax'))
+# # %%
+# # Define Custom CNN model
+# # ~~~~~~~~~~~~~~~~
+# model = tf.keras.models.Sequential()
+# model.add(Conv2D(filters=2, kernel_size=2, input_shape=(HEIGHT,WIDTH,3)))
+# model.add(Flatten())
+# model.add(Dense(256, activation = 'relu'))
+# model.add(Dropout(0.2))
+# model.add(Dense(128, activation = 'relu'))
+# model.add(Dropout(0.2))
+# model.add(Dense(64, activation = 'relu'))
+# model.add(Dropout(0.2))
+# model.add(Dense(32, activation = 'relu'))
+# model.add(Dropout(0.2))
+# model.add(Dense(9, activation = 'softmax'))
+# # Model optimizer
+# optimizer = optimizers.Adam(lr = lr)
 
-# Define model optimizer
-adam = optimizers.Adam(lr = lr)
 
+# %%
+# Define InceptionV3 Transfer Learning model
+# ~~~~~~~~~~~~~~~~
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 
-# from tensorflow.keras.models import Model
-# from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-#
-# # create the base pre-trained model
-# input_tensor = Input(shape=(300,400,3))
-# base_model = InceptionV3(input_tensor=input_tensor, weights='imagenet', include_top=False)
-#
-# # Freeze the base_model
-# base_model.trainable = False
-#
-# # add a global spatial average pooling layer
-# x = base_model.output
-# x = GlobalAveragePooling2D()(x)
-# # let's add a fully-connected layer
-# x = Dense(1024, activation='relu')(x)
-# x = Dense(512, activation='relu')(x)
-# x = Dense(128, activation='relu')(x)
-# x = Dense(64, activation='relu')(x)
-# # and a logistic layer -- let's say we have 9 classes
-# predictions = Dense(9, activation='softmax')(x)
-#
-# # this is the model we will train
-# model = Model(inputs=input_tensor, outputs=predictions)
-#
-# # first: train only the top layers (which were randomly initialized)
-# # i.e. freeze all convolutional InceptionV3 layers
-# for layer in base_model.layers:
-#     layer.trainable = False
-#
-# # we need to recompile the model for these modifications to take effect
-# # we use SGD with a low learning rate
-# from tensorflow.keras.optimizers import SGD
+# create the base pre-trained model
+input_tensor = Input(shape=(300,400,3))
+base_model = InceptionV3(input_tensor=input_tensor, weights='imagenet', include_top=False)
+
+# Freeze the base_model
+base_model.trainable = False
+
+# add a global spatial average pooling layer
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+# let's add a fully-connected layer
+x = Dense(1024, activation='relu')(x)
+x = Dense(512, activation='relu')(x)
+x = Dense(128, activation='relu')(x)
+x = Dense(64, activation='relu')(x)
+# and a logistic layer -- let's say we have 9 classes
+predictions = Dense(9, activation='softmax')(x)
+
+# this is the model we will train
+model = Model(inputs=input_tensor, outputs=predictions)
+
+# first: train only the top layers (which were randomly initialized)
+# i.e. freeze all convolutional InceptionV3 layers
+for layer in base_model.layers:
+    layer.trainable = False
+
+# we need to recompile the model for these modifications to take effect
+# we use SGD with a low learning rate
+from tensorflow.keras.optimizers import SGD
+optimizer=SGD(lr=lr, momentum=0.9)
+
 
 # Compile model
 model.compile(
-                # optimizer=SGD(lr=lr, momentum=0.9),
-                optimizer=adam,
+                optimizer=optimizer,
                 loss='categorical_crossentropy',
                 metrics=['categorical_accuracy']
                 )
+# Display model summary
+model.summary()
 
 
+# %%
+# TensorBoard callbacks definition
+# ~~~~~~~~~~~~~~~~
 log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 tensorboard = TensorBoard(
@@ -117,9 +127,7 @@ tensorboard = TensorBoard(
 )
 
 
-model.summary()
-
-# iterates through the training files
+# Iterates through the training files
 for epoch in range(EPOCHS):
     data_order = [i for i in range(0,FILE_I_END+1)]
     shuffle(data_order)
@@ -127,7 +135,7 @@ for epoch in range(EPOCHS):
 
         try:
             file_name = 'D:/Data Warehouse/pygta5/data/{}/training_data-{}.npy'.format(MODEL_NAME, i)
-            # full file info
+            # Load file
             train_data = np.load(file_name, allow_pickle=True)
 
             SAMPLE = len(train_data)

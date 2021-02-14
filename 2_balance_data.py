@@ -162,7 +162,7 @@ def append(MODEL_NAME_LOAD, MODEL_NAME_SAVE):
 
 
 raw = 'model_4_400x300_raw_inceptionv3' # Load data from this path
-balanced = 'model_4_400x300_balanced_custom' # Save data in this path
+balanced = 'model_4_400x300_balanced_inceptionv3' # Save data in this path
 
 balance(raw, balanced)
 extend(balanced, balanced)
