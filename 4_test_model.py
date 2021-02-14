@@ -1,3 +1,5 @@
+# Modified code of Sentex Pygta5 3. test_model.py
+
 import os
 import numpy as np
 import cv2
@@ -35,7 +37,7 @@ motion_log = deque(maxlen=log_len)
 WIDTH = 400
 HEIGHT = 300
 
-MODEL_NAME = 'model_4_400x300_balanced_custom'
+MODEL_NAME = 'model_4_400x300_balanced_inceptionv3'
 MODEL_NAME_OBJECT_DETECTOR = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
 
 w = [1,0,0,0,0,0,0,0,0]
