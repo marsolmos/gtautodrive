@@ -20,6 +20,7 @@ lib64/
 logs/fit/*
 models/model_2*
 models/model_3*
+models/model_4*
 parts/
 sdist/
 var/

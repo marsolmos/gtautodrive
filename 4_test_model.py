@@ -28,14 +28,14 @@ from keras.models import load_model
 GAME_WIDTH = 800
 GAME_HEIGHT = 600
 
-log_len = 1
-motion_req = 400
+log_len = 2
+motion_req = 800
 motion_log = deque(maxlen=log_len)
 
 WIDTH = 400
 HEIGHT = 300
 
-MODEL_NAME = 'model_3_400x300_balanced_custom'
+MODEL_NAME = 'model_4_400x300_balanced_custom'
 MODEL_NAME_OBJECT_DETECTOR = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
 
 w = [1,0,0,0,0,0,0,0,0]
@@ -55,23 +55,16 @@ def straight():
     ReleaseKey(S)
 
 def left():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
-        PressKey(A)
-        ReleaseKey(S)
-        ReleaseKey(D)
-        ReleaseKey(S)
+    ReleaseKey(W)
+    PressKey(A)
+    ReleaseKey(S)
+    ReleaseKey(D)
 
 def right():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
-        PressKey(D)
-        ReleaseKey(A)
-        ReleaseKey(S)
+    ReleaseKey(W)
+    PressKey(D)
+    ReleaseKey(A)
+    ReleaseKey(S)
 
 def reverse():
     PressKey(S)
@@ -79,13 +72,11 @@ def reverse():
     ReleaseKey(W)
     ReleaseKey(D)
 
-
 def forward_left():
     PressKey(W)
     PressKey(A)
     ReleaseKey(D)
     ReleaseKey(S)
-
 
 def forward_right():
     PressKey(W)
@@ -93,13 +84,11 @@ def forward_right():
     ReleaseKey(A)
     ReleaseKey(S)
 
-
 def reverse_left():
     PressKey(S)
     PressKey(A)
     ReleaseKey(W)
     ReleaseKey(D)
-
 
 def reverse_right():
     PressKey(S)
@@ -153,8 +142,8 @@ def main():
     mode_choice = 0
 
     screen = grab_screen(region=(0,40,GAME_WIDTH,GAME_HEIGHT+40))
-    screen_processed = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
-    prev = cv2.resize(screen_processed, (WIDTH,HEIGHT))
+    screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
+    prev = cv2.resize(screen, (WIDTH,HEIGHT))
 
     t_minus = prev
     t_now = prev
@@ -163,25 +152,28 @@ def main():
     while(True):
 
         if not paused:
+            # 800x600 windowed model
+            screen = grab_screen(region=(0,40,GAME_WIDTH,GAME_HEIGHT))
             # resize to something a bit more acceptable for a CNN
-            screen_processed = cv2.resize(screen, (WIDTH,HEIGHT))
+            screen = cv2.resize(screen, (WIDTH,HEIGHT))
             # run a color convert:
-            screen_processed = cv2.cvtColor(screen_processed, cv2.COLOR_BGR2RGB)
+            screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
 
             last_time = time.time()
 
-            delta_count_last = motion_detection(t_minus, t_now, t_plus, screen_processed)
+            delta_count_last = motion_detection(t_minus, t_now, t_plus, screen)
 
             t_minus = t_now
             t_now = t_plus
-            t_plus = screen_processed
+            t_plus = screen
             t_plus = cv2.blur(t_plus,(4,4))
 
-            screen_processed = screen_processed / 255.0
+            screen = screen / 255.0
 
-            prediction = model.predict([screen_processed.reshape(-1,HEIGHT,WIDTH,3)])
+            prediction = model.predict([screen.reshape(-1,HEIGHT,WIDTH,3)])
 
-            prediction = np.array(prediction) * np.array([0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
+            prediction = np.array(prediction) * np.array([1.0, 1.0, 0.5, 0.75, 0.5, 0.75, 1.0, 1.0, 1.0])
+            print('prediction: {}'.format(prediction))
 
             mode_choice = np.argmax(prediction)
 

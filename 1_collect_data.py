@@ -23,7 +23,7 @@ sd = [0,0,0,0,0,0,0,1,0]
 nk = [0,0,0,0,0,0,0,0,1]
 
 starting_value = 1
-MODEL_NAME = 'model_3_400x300_raw_custom'
+MODEL_NAME = 'model_4_400x300_raw_inceptionv3'
 
 while True:
     file_name = 'D:/Data Warehouse/pygta5/data/{}/training_data-{}.npy'.format(MODEL_NAME, starting_value)
