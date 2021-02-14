@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2
 import time
@@ -7,6 +8,10 @@ from statistics import mode,mean
 import numpy as np
 
 from config.collect_data.grabscreen import grab_screen
+from object_detection.utils import label_map_util, config_util
+from object_detection.builders import model_builder
+from config.collect_data.object_detector import download_object_detector
+from config.collect_data.object_detector import detect_fn, get_distance
 from config.collect_data.directkeys import PressKey,ReleaseKey, W, A, S, D
 from config.collect_data.getkeys import key_check
 from config.test_model.motion import motion_detection
@@ -15,6 +20,8 @@ from keras.applications.inception_v3 import InceptionV3 as googlenet
 import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0],True)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    # Suppress TensorFlow logging
+tf.get_logger().setLevel('ERROR')           # Suppress TensorFlow logging (2)
 
 from keras.models import load_model
 
@@ -27,9 +34,9 @@ motion_log = deque(maxlen=log_len)
 
 WIDTH = 400
 HEIGHT = 300
-lr = 1e-3
 
-MODEL_NAME = 'model_2_400x300_raw_custom'
+MODEL_NAME = 'model_4_400x300_balanced_custom'
+MODEL_NAME_OBJECT_DETECTOR = "ssd_mobilenet_v2_320x320_coco17_tpu-8"
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
@@ -48,20 +55,13 @@ def straight():
     ReleaseKey(S)
 
 def left():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
+    ReleaseKey(W)
     PressKey(A)
     ReleaseKey(S)
     ReleaseKey(D)
-    ReleaseKey(S)
 
 def right():
-    if random.randrange(0,3) == 1:
-        PressKey(W)
-    else:
-        ReleaseKey(W)
+    ReleaseKey(W)
     PressKey(D)
     ReleaseKey(A)
     ReleaseKey(S)
@@ -72,13 +72,11 @@ def reverse():
     ReleaseKey(W)
     ReleaseKey(D)
 
-
 def forward_left():
     PressKey(W)
     PressKey(A)
     ReleaseKey(D)
     ReleaseKey(S)
-
 
 def forward_right():
     PressKey(W)
@@ -86,13 +84,11 @@ def forward_right():
     ReleaseKey(A)
     ReleaseKey(S)
 
-
 def reverse_left():
     PressKey(S)
     PressKey(A)
     ReleaseKey(W)
     ReleaseKey(D)
-
 
 def reverse_right():
     PressKey(S)
@@ -106,16 +102,31 @@ def no_keys():
         PressKey(W)
     else:
         ReleaseKey(W)
-    ReleaseKey(A)
-    ReleaseKey(S)
-    ReleaseKey(D)
+        ReleaseKey(A)
+        ReleaseKey(S)
+        ReleaseKey(D)
 
 
+# %%
+# Download and Load Vehicle Detector Model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+PATH_TO_CFG, PATH_TO_CKPT, PATH_TO_LABELS = download_object_detector(MODEL_NAME_OBJECT_DETECTOR)
 
-# model = googlenet(WIDTH, HEIGHT, 3, lr, output=9)
-# load_name = 'models/{}'.format(MODEL_NAME)
-# model.load(load_name)
+# Load pipeline config and build a detection model
+configs = config_util.get_configs_from_pipeline_file(PATH_TO_CFG)
+model_config = configs['model']
+detection_model = model_builder.build(model_config=model_config, is_training=False)
 
+# Restore checkpoint
+ckpt = tf.compat.v2.train.Checkpoint(model=detection_model)
+ckpt.restore(os.path.join(PATH_TO_CKPT, 'ckpt-0')).expect_partial()
+
+category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS,
+                                                                    use_display_name=True)
+
+# %%
+# Load Autonomous Driving Model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
 load_name = 'models/{}'.format(MODEL_NAME)
 model = tf.keras.models.load_model(load_name)
 model.summary()
@@ -123,7 +134,6 @@ model.summary()
 print('We have loaded a previous model!!!!')
 
 def main():
-    last_time = time.time()
     for i in list(range(4))[::-1]:
         print(i+1)
         time.sleep(1)
@@ -142,7 +152,7 @@ def main():
     while(True):
 
         if not paused:
-            # 800x600 windowed mode
+            # 800x600 windowed model
             screen = grab_screen(region=(0,40,GAME_WIDTH,GAME_HEIGHT))
             # resize to something a bit more acceptable for a CNN
             screen = cv2.resize(screen, (WIDTH,HEIGHT))
@@ -162,18 +172,17 @@ def main():
 
             prediction = model.predict([screen.reshape(-1,HEIGHT,WIDTH,3)])
 
-            prediction = np.array(prediction) * np.array([0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
+            prediction = np.array(prediction) * np.array([1.0, 1.0, 0.5, 0.75, 0.5, 0.75, 1.0, 1.0, 1.0])
+            print('prediction: {}'.format(prediction))
 
             mode_choice = np.argmax(prediction)
 
             if mode_choice == 0:
                 straight()
                 choice_picked = 'straight'
-
             elif mode_choice == 1:
                 reverse()
                 choice_picked = 'reverse'
-
             elif mode_choice == 2:
                 left()
                 choice_picked = 'left'
@@ -198,7 +207,21 @@ def main():
 
             motion_log.append(delta_count_last)
             motion_avg = round(mean(motion_log),3)
-            print('loop took {} seconds. Motion: {}. Choice: {}'.format( round(time.time()-last_time, 3) , motion_avg, choice_picked))
+            print('loop took {} seconds. Motion: {}. Choice: {}'.format(round(time.time()-last_time, 3) , motion_avg, choice_picked))
+
+            # Get video stream for object detection
+            screen = grab_screen(region=(40,100,800,450))
+            image_np = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
+
+            # Detect objects on video stream
+            last_time = time.time()
+            input_tensor = tf.convert_to_tensor(np.expand_dims(image_np, 0), dtype=tf.float32)
+            detections, predictions_dict, shapes = detect_fn(detection_model, input_tensor)
+            # print('Object detection inference time: {}'.format(time.time() - last_time))
+
+            # Estimate distance and collision risk from detected objects
+            collision, distance = get_distance(detections)
+            print('Collision: {} - Distance: {}\n'.format(collision, distance))
 
             # If vehicle is stucked, start some evasive maneuvers
             if motion_avg < motion_req and len(motion_log) >= log_len:
@@ -238,15 +261,25 @@ def main():
                 for i in range(log_len-2):
                     del motion_log[0]
 
+            # If collision risk, try to avoid it
+            if collision:
+                print('Collision Warning. Starting evasive maneuvers: ', end='')
+                reverse()
+                time.sleep(random.uniform(0,2))
+
+            else:
+                pass
+
         keys = key_check()
 
-        # p pauses game and can get annoying.
+        # Press 'T' to pause execution of script
         if 'T' in keys:
             if paused:
                 paused = False
                 time.sleep(1)
             else:
                 paused = True
+                print('\n\nPAUSED\n\n')
                 ReleaseKey(A)
                 ReleaseKey(W)
                 ReleaseKey(D)

@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+config/collect_data/vehicle_detector_data/*
 develop-eggs/
 dist/
 downloads/
@@ -16,6 +17,10 @@ eggs/
 .eggs/
 lib/
 lib64/
+logs/fit/*
+models/model_2*
+models/model_3*
+models/model_4*
 parts/
 sdist/
 var/

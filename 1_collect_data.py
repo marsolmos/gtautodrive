@@ -1,9 +1,16 @@
-import numpy as np
-from config.collect_data.grabscreen import grab_screen
-import cv2
 import time
-from config.collect_data.getkeys import key_check
 import os
+import numpy as np
+import cv2
+
+from config.collect_data.getkeys import key_check
+from config.collect_data.grabscreen import grab_screen
+from config.collect_data.preprocess_img import preprocess_img
+from object_detection.utils import label_map_util, config_util
+from object_detection.builders import model_builder
+from config.collect_data.object_detector import download_object_detector
+from config.collect_data.object_detector import detect_fn, get_distance
+
 
 w = [1,0,0,0,0,0,0,0,0]
 s = [0,1,0,0,0,0,0,0,0]
@@ -16,7 +23,7 @@ sd = [0,0,0,0,0,0,0,1,0]
 nk = [0,0,0,0,0,0,0,0,1]
 
 starting_value = 1
-MODEL_NAME = 'model_2_400x300_raw_custom'
+MODEL_NAME = 'model_4_400x300_raw_inceptionv3'
 
 while True:
     file_name = 'D:/Data Warehouse/pygta5/data/{}/training_data-{}.npy'.format(MODEL_NAME, starting_value)
@@ -73,20 +80,18 @@ def main(file_name, starting_value):
         if not paused:
             # 800x600 windowed mode
             screen = grab_screen(region=(0,40,800,600))
-            # resize to something a bit more acceptable for a CNN
-            screen = cv2.resize(screen, (400,300))
-            # run a color convert:
-            screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
+            # Preprocess screen image
+            temp_img,processed_img = preprocess_img(screen)
 
             keys = key_check()
             output = keys_to_output(keys)
-            training_data.append([screen,output])
+            training_data.append([processed_img,output])
 
-            # # Display game image captured
-            # cv2.imshow('window',cv2.resize(screen,(800,600)))
-            # if cv2.waitKey(25) & 0xFF == ord('q'):
-            #     cv2.destroyAllWindows()
-            #     break
+            # Display game image captured
+            cv2.imshow('window', processed_img)
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                cv2.destroyAllWindows()
+                break
 
             if len(training_data) % 100 == 0:
                 print(len(training_data))
