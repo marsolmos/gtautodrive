@@ -49,4 +49,4 @@ Save the collected data into a custom path in your machine and use it to train y
 5. Include custom sensors (GPS, LIDARs, etc.)
 
 ## Acknowledgement ##
-Sentdex: https://www.youtube.com/playlist?list=PLQVvvaa0QuDeETZEOy4VdocT7TOjfSA8a
+Sentdex: https://github.com/Sentdex/pygta5
