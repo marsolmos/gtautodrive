@@ -96,7 +96,7 @@ pandocfilters==1.4.3
 parso==0.7.1
 pbr==5.5.1
 pickleshare==0.7.5
-Pillow==8.1.1
+Pillow==8.3.2
 pkginfo==1.6.1
 prometheus-client==0.9.0
 promise==2.3
